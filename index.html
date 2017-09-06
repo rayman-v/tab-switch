@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>switch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+  <style>
+    *{font-size: 16px; margin: 0; padding: 0;}
+    body,html {background-color: #f9f9f9; height: 100%;}
+    .box{height: 100%; width: 100%; overflow: hidden; display: flex; flex-direction: column;}
+    .tab{display: flex; height: 44px; border-bottom: 1px solid #eee; background-color: white; position: relative; z-index: 99; flex-shrink: 0;}
+    .tab>button{width: 100px; font-weight: normal; flex-grow: 1; flex-shrink: 1; border: none; background-color: transparent;}
+    .tab>i{border-bottom: 2px solid red; font-size: 0; width: 25%; position: absolute; left: 0; bottom: 0;}
+    .tab>i.animated{transition: all 0.1s ease-out;}
+    .switch{ flex-grow: 1; width: 100%; overflow: hidden;}
+    .total{ display: flex; width: 100%; height: 100%; -webkit-overflow-scrolling: touch; overflow-y: auto;}
+    .total.animated{transition: all 0.2s ease-out;}
+    .total>.part{ font-size: 50px; width: 100%; flex-shrink: 0; background-color: red; overflow-y: auto;}
+    .total>.part.animated{transition: all 0.2s ease-in;}
+    .total>.animated{transition: all 0.2s ease-out;}
+  </style>
+</head>
+<body>
+<div class="box">
+  <div class="tab" id="tab">
+    <button>待付款</button>
+    <button>待发货</button>
+    <button>待评价</button>
+    <button>其他</button>
+    <i id="line"></i>
+  </div>
+  <div class="switch" id="switch">
+    <div class="total" id="total">
+      <div class="part in">
+        a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>a<br>
+      </div>
+      <div class="part">
+        b<br>b<br>b<br>b<br>b<br>b<br>b<br>b<br>b<br>b<br>b<br>b<br><br>b<br>b<br>b<br>
+      </div>
+      <div class="part">
+        c<br>c<br>c<br>c<br>c<br>c<br>c<br>c<br>
+      </div>
+      <div class="part">
+        d<br>d<br>d<br>d<br>d<br>d<br>d<br>d<br>d<br>d<br>d<br>d<br>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script src="js/jquery-3.2.1.min.js"></script>
+<script>
+(function init(){
+  $('#line').width($('#tab>button:first').width());
+})();
+$(function(){
+  var $switch = $('#switch'),
+      $total = $('#total'),
+      $line = $('#line'),
+      eachWidth = $('#total>.part:first').width(),
+      slideY = false,
+      slideX = false,
+      start = {x: 0, y: 0},
+      move = {x: 0, y: 0},
+      count = $('#total>.part').length,
+      currentX = 0;
+  $switch
+    .on('touchstart', function (e){
+      slideY = false;
+      slideX = false;
+      start.x = e.originalEvent.targetTouches[0].clientX;
+      start.y = e.originalEvent.targetTouches[0].clientY;
+    }).on('touchmove', function (e){
+      if (slideY) return;
+      move.x = e.originalEvent.targetTouches[0].clientX;
+      move.y = e.originalEvent.targetTouches[0].clientY;
+      
+      var x = Math.abs(move.x - start.x);
+      var y = Math.abs(move.y - start.y);
+      if (!slideX && !slideY) {
+        // 判断用户是横向滚动还是纵向滚动
+        if (x > 10 || y > 10) {
+          x/y > 1 ? slideX = true : slideY = true; 
+          if (slideY) return;
+        }
+      }
+      if (slideX) {
+        e.preventDefault();
+        var distance = move.x - start.x;
+        $total.css('transform', 'translateX(' + (currentX + distance) + 'px)');
+        $line.css('transform', 'translateX(' + (-(currentX + distance) / count) + 'px)');
+        if (move.x - start.x > 0) {
+          var prevIndex = (-currentX) / eachWidth - 1;
+          if (prevIndex < 0) return;
+          $total.children('.part').eq(prevIndex).css('opacity', x / eachWidth + 0.4).addClass('in');
+        }else{
+          var nextIndex = (-currentX) / eachWidth + 1;
+          if (prevIndex >= count) return;
+          $total.children('.part').eq(nextIndex).css('opacity', x / eachWidth + 0.4).addClass('in');
+        }
+      }
+    }).on('touchend touchcancel', function(e) {
+      if (slideX) {
+        var distance = e.originalEvent.changedTouches[0].clientX - start.x;
+        if (distance > 0 && currentX >= 0) {
+          // 右划第一页
+        }else if (distance < 0 && currentX <= (count-1) * (-eachWidth)) {
+          // 左划最后一页
+        }else if (Math.abs(distance) > eachWidth / 4) {
+          // 滑动距离超过 1/4 ，则滑动成功
+          distance > 0 ? currentX += eachWidth : currentX -= eachWidth;
+        }
+        $total.addClass('animated').css({'transform': 'translateX(' + currentX + 'px)'});
+        $line.addClass('animated').css('transform', 'translateX(' + (-currentX/count) + 'px)');
+        $total.children('.part').addClass('animated').css('opacity', 1).removeClass('in').eq(-currentX/eachWidth).addClass('in');
+      }
+    });
+    
+  $total.on('webkitTransitionEnd', function(){
+    $total.removeClass('animated');
+    $line.removeClass('animated');
+    $total.children('.part').removeClass('animated');
+  })
+});
+</script>
+</html>
